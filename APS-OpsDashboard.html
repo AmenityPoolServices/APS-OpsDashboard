@@ -1010,35 +1010,41 @@ colSelect.value = 'Overall Score';
 
            // HELPERS
       // universalSort: compares two rows based on sortState config
-      function universalSort(a, b, config) {
-        const va = a[config.column], vb = b[config.column];
-        // Handle missing values
-        if (va == null) return 1;
-        if (vb == null) return -1;
-        // Numeric sort
-        if (typeof va === 'number' && typeof vb === 'number') {
-          return config.direction === 'asc' ? va - vb : vb - va;
-        }
-        // String sort
-        const sa = String(va), sb = String(vb);
-        return config.direction === 'asc'
-          ? sa.localeCompare(sb)
-          : sb.localeCompare(sa);
-      }
+function universalSort(a, b, config) {
+  const { column, direction } = config;
+  const dir = direction === 'asc' ? 1 : -1;
+  const va = a[column], vb = b[column];
+  // handle null/undefined
+  if (va == null && vb != null) return -1 * dir;
+  if (va != null && vb == null) return  1 * dir;
+  // numeric compare
+  if (typeof va === 'number' && typeof vb === 'number') {
+    return (va - vb) * dir;
+  }
+  // string compare (case‐insensitive)
+  const sa = String(va).toLowerCase(), sb = String(vb).toLowerCase();
+  if (sa < sb) return -1 * dir;
+  if (sa > sb) return  1 * dir;
+  return 0;
+}
+
 
       // setupAllSortableTables: allow clicking on any <th.sortable> to toggle sort
-      function setupAllSortableTables() {
-        document.querySelectorAll('#fleet-gps-table th.sortable').forEach(th => {
-          th.style.cursor = 'pointer';
-          th.addEventListener('click', () => {
-            const col = th.dataset.sort;
-            const cur = sortState['fleet-gps-table'] || {};
-            const dir = (cur.column === col && cur.direction === 'asc') ? 'desc' : 'asc';
-            sortState['fleet-gps-table'] = { column: col, direction: dir };
-            renderFleetManagement(locationFilterEl.value);
-          });
-        });
-      }
+function setupAllSortableTables() {
+  document.querySelectorAll('th.sortable').forEach(th => {
+    // make it clear it’s clickable
+    th.style.cursor = 'pointer';
+    th.onclick = () => {
+      const col = th.dataset.sort;
+      // flip direction if already sorting this column
+      const prev = sortState['fleet-gps-table'] || {};
+      const dir = prev.column === col && prev.direction === 'asc' ? 'desc' : 'asc';
+      sortState['fleet-gps-table'] = { column: col, direction: dir };
+      renderFleetManagement(document.getElementById('location-filter').value);
+    };
+  });
+}
+
 
       // setupAllUploaders (you already have CSV uploader hooked up, so leave this empty or remove)
       function setupAllUploaders() {
