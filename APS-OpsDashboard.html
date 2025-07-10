@@ -990,18 +990,43 @@ colSelect.value = 'Overall Score';
         // build ar-aging-chart and populate critical-accounts-body
       }
 
-      // HELPERS
+           // HELPERS
+      // universalSort: compares two rows based on sortState config
       function universalSort(a, b, config) {
-        /* ... */
+        const va = a[config.column], vb = b[config.column];
+        // Handle missing values
+        if (va == null) return 1;
+        if (vb == null) return -1;
+        // Numeric sort
+        if (typeof va === 'number' && typeof vb === 'number') {
+          return config.direction === 'asc' ? va - vb : vb - va;
+        }
+        // String sort
+        const sa = String(va), sb = String(vb);
+        return config.direction === 'asc'
+          ? sa.localeCompare(sb)
+          : sb.localeCompare(sa);
       }
 
+      // setupAllSortableTables: allow clicking on any <th.sortable> to toggle sort
       function setupAllSortableTables() {
-        /* ... */
+        document.querySelectorAll('#fleet-gps-table th.sortable').forEach(th => {
+          th.style.cursor = 'pointer';
+          th.addEventListener('click', () => {
+            const col = th.dataset.sort;
+            const cur = sortState['fleet-gps-table'] || {};
+            const dir = (cur.column === col && cur.direction === 'asc') ? 'desc' : 'asc';
+            sortState['fleet-gps-table'] = { column: col, direction: dir };
+            renderFleetManagement(locationFilterEl.value);
+          });
+        });
       }
 
+      // setupAllUploaders (you already have CSV uploader hooked up, so leave this empty or remove)
       function setupAllUploaders() {
-        /* ... */
+        // no-op
       }
+
 /**
  * Clears all sort-arrow glyphs, then re-draws the one for the
  * currently sorted column (+ up/down arrow).
