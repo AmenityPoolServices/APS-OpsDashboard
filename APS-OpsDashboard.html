@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>APS Business Command Center</title>
+  <link
+    href="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css"
+    rel="stylesheet"
+  />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js"></script>
+
+  <style>
+    :root {
+      --bg-main: #1a202c;
+      --bg-panel: #2d3748;
+      --bg-accent: #4a5568;
+      --text-primary: #edf2f7;
+      --text-secondary: #a0aec0;
+      --accent-color: #3182ce;
+      --positive-color: #48bb78;
+      --negative-color: #f56565;
+      --warning-color: #ecc94b;
+.pass    { background-color: #c6f6d5; }  /* light green */
+.fail    { background-color: #fed7d7; }  /* light red */
+.warning { background-color: #faf089; }  /* bright yellow */
+.highlight { font-weight: 700; }        /* bold for perfect 100% */
+.pass, .fail, .warning, .highlight {
+  color: #000;
+    }
+    body {
+      margin: 0;
+      padding: 1rem 2rem;
+      font-family: -apple-system, BlinkMacSystemFont,
+        "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-primary);
+    }
+    .container {
+      max-width: 1800px;
+      margin: 0 auto;
+    }
+    .top-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      gap: 1rem;
+    }
+    .top-bar h1 {
+      font-size: 1.5rem;
+      margin: 0;
+      white-space: nowrap;
+    }
+    @media (min-width: 768px) {
+      .top-bar h1 {
+        font-size: 2rem;
+      }
+    }
+    #location-filter-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    #location-filter {
+      background-color: var(--bg-panel);
+      color: var(--text-primary);
+      border-radius: 0.25rem;
+      padding: 0.5rem;
+      border: 1px solid var(--bg-accent);
+    }
+    .pillar-nav {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .pillar-button {
+      padding: 0.75rem 2rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+      border: 2px solid var(--bg-panel);
+      border-radius: 0.5rem;
+      background-color: var(--bg-panel);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .pillar-button.active {
+      background-color: var(--accent-color);
+      border-color: var(--accent-color);
+      color: white;
+    }
+    .module-nav {
+      display: none;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 2rem;
+      background-color: var(--bg-panel);
+      border-radius: 0.5rem;
+      padding: 0.5rem;
+      gap: 0.5rem;
+    }
+    .module-nav.active {
+      display: flex;
+    }
+    .nav-button {
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      border-radius: 0.375rem;
+      cursor: pointer;
+    }
+    .nav-button.active {
+      background-color: var(--bg-accent);
+      color: white;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .panel {
+      background-color: var(--bg-panel);
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .panel-title {
+      margin: 0 0 1.5rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+      border-bottom: 1px solid var(--bg-accent);
+      padding-bottom: 0.75rem;
+    }
+    .grid-container {
+      display: grid;
+      gap: 1.5rem;
+      grid-template-columns: repeat(
+        auto-fit,
+        minmax(250px, 1fr)
+      );
+    }
+    .kpi-card {
+      background-color: var(--bg-accent);
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .kpi-title {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+    .kpi-value {
+      font-size: 2.5rem;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .kpi-context {
+      margin-top: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+    .info-card-grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    }
+    .info-card {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      background-color: var(--bg-accent);
+      border-radius: 0.375rem;
+      text-align: center;
+    }
+    .info-card a {
+      color: var(--text-primary);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1.1rem;
+    .header-label {
+      display: inline-block;
+      transform: rotate(-45deg);
+      transform-origin: bottom left;
+      white-space: nowrap;
+      font-size: 0.9rem;
+      margin-right: 0.25rem;
+}
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+/* Wrap only header text */
+th {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--bg-accent);
+  white-space: normal;      /* allow wrapping */
+  word-break: break-word;   /* break at any character if needed */
+  max-width: 80px;          /* adjust to taste—controls column width */
+  text-align: center;       /* center multiline header text */
+  vertical-align: bottom;   /* align wrapped text neatly */
+}
+
+/* Keep data cells unchanged (no wrap) */
+td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--bg-accent);
+  white-space: nowrap;
+}
+/* ─── TILTED HEADER LABELS ───────────────────────────────────────────── */
+th {
+  /* give extra top padding so the rotated text has room */
+  padding: 1.5rem 0.5rem 0.5rem;
+  position: relative;
+}
+
+/* Keep the sort arrow upright */
+th .sort-arrow {
+  display: inline-block;
+  transform: none;
+  margin-left: 0.25rem;
+}
+/* ─── TILTED HEADER LABELS ──────────────────────────────────── */
+th.sortable {
+  position: relative;
+  padding-top: 1rem;       /* room above for the arrow */
+  padding-bottom: 2rem;    /* room below for the tilted label */
+}
+th.sortable .header-label {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-45deg);
+  transform-origin: bottom center;
+  white-space: nowrap;
+  font-size: 0.9rem;
+}
+th.sortable .sort-arrow {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  transform: none;         /* keep arrow upright */
+}
+/* ───────────────────────────────────────────────────────────── */
+
+    .positive {
+      color: var(--positive-color);
+    }
+    .negative {
+      color: var(--negative-color);
+    }
+    .warning {
+      color: var(--warning-color);
+    }
+    #map {
+      width: 100%;
+      height: 600px;
+      border-radius: 0.5rem;
+    }
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .action-button {
+      background-color: var(--accent-color);
+      color: white;
+      border: none;
+      padding: 0.6rem 1.5rem;
+      border-radius: 0.25rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header class="top-bar">
+      <h1>APS Business Command Center</h1>
+      <div id="location-filter-group">
+        <label for="location-filter">Location:</label>
+        <select id="location-filter">
+          <option value="ALL">All</option>
+          <option value="DAL">Dallas</option>
+          <option value="JAX">Jacksonville</option>
+          <option value="MIA">Miami</option>
+          <option value="ORL">Orlando</option>
+          <option value="PHX">Phoenix</option>
+          <option value="TUCCG">Tucson</option>
+          <option value="PTC">Port Charlotte</option>
+        </select>
+      </div>
+    </header>
+
+    <div class="pillar-nav">
+      <button class="pillar-button active" data-pillar="ops">Ops Command</button>
+      <button class="pillar-button" data-pillar="admin">Admin Hub</button>
+      <button class="pillar-button" data-pillar="ar">AR & Financials</button>
+    </div>
+
+    <nav id="ops-nav" class="module-nav active">
+      <button class="nav-button active" data-target="executive-center">Executive</button>
+      <button class="nav-button" data-target="fleet-management">Fleet</button>
+      <button class="nav-button" data-target="safety-risk">Safety</button>
+      <button class="nav-button" data-target="people-hub">People</button>
+      <button class="nav-button" data-target="growth-intel">Growth</button>
+      <button class="nav-button" data-target="quality">Quality</button>
+      <button class="nav-button" data-target="pnl-simulator">P&L Simulator</button>
+    </nav>
+
+    <nav id="admin-nav" class="module-nav">
+      <button class="nav-button active" data-target="admin-contracts">Contracts</button>
+      <button class="nav-button" data-target="admin-sops">SOP Library</button>
+    </nav>
+
+    <nav id="ar-nav" class="module-nav">
+      <button class="nav-button active" data-target="ar-dashboard">AR Dashboard</button>
+    </nav>
+
+    <main>
+      <!-- EXECUTIVE -->
+      <section id="executive-center" class="tab-content active">
+        <div class="panel">
+          <h3 class="panel-title">Ops Executive Summary</h3>
+          <div id="executive-kpi-grid" class="grid-container"></div>
+        </div>
+      </section>
+
+      <!-- FLEET -->
+      <section id="fleet-management" class="tab-content">
+        <div class="panel">
+          <h3 class="panel-title">Fleet Quick Links</h3>
+          <div id="fleet-links-container" class="info-card-grid"></div>
+        </div>
+        <div class="panel">
+          <h3 class="panel-title">Documents & Reports</h3>
+          <div id="fleet-docs-container" class="info-card-grid"></div>
+        </div>
+        <div class="panel">
+          <h3 class="panel-title">Fleet GPS & Performance</h3>
+          <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;">
+            <input type="file" id="fleet-csv-upload" accept=".csv" style="display:none"/>
+            <button
+              onclick="document.getElementById('fleet-csv-upload').click();"
+              class="action-button"
+            >
+              Upload GPS CSV
+            </button>
+            <span id="upload-status" style="color:var(--text-secondary)"></span>
+          </div>
+          <div style="overflow-x:auto">
+            <div class="sort-controls" style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
+  <label for="fleet-sort-column" style="color:var(--text-secondary);font-size:0.875rem;">Sort by:</label>
+<select id="fleet-sort-column" class="input-group__select">
+  <option value="Category">Category</option>
+  <option value="Device">Device</option>
+  <option value="Overall Score">Overall Score</option>
+  <option value="Miles">Miles</option>
+  <option value="Duration">Duration</option>
+  <option value="Highway %">Highway %</option>
+  <option value="City %">City %</option>
+  <option value="Idle Time">Idle Time</option>
+  <option value="Idling %">Idling %</option>
+  <option value="Idling Score">Idling Score</option>
+  <option value="Speeding Score">Speeding Score</option>
+  <option value="Highway 1-8%">Highway 1-8%</option>
+  <option value="Highway 9-13%">Highway 9-13%</option>
+  <option value="Highway 14-19%">Highway 14-19%</option>
+  <option value="Highway 20+%">Highway 20+%</option>
+  <option value="Highway Score">Highway Score</option>
+  <option value="City 1-5%">City 1-5%</option>
+  <option value="City 6-9%">City 6-9%</option>
+  <option value="City 10-13%">City 10-13%</option>
+  <option value="City 14+%">City 14+%</option>
+  <option value="City Score">City Score</option>
+  <option value="Acceleration">Acceleration</option>
+  <option value="Braking">Braking</option>
+  <option value="Aggression Score">Aggression Score</option>
+  <option value="Date Range">Date Range</option>
+</select>
+
+  <button id="fleet-sort-asc" class="action-button" style="padding:0.4rem 1rem;">Asc</button>
+  <button id="fleet-sort-desc" class="action-button" style="padding:0.4rem 1rem;">Desc</button>
+</div>
+
+            <table id="fleet-gps-table">
+
+ <thead>
+  <tr>
+    <th class="sortable" data-sort="Category">
+      <span class="header-label">Category</span>
+      <span class="sort-arrow"></span>
+    </th>
+    <th class="sortable" data-sort="Device">
+      <span class="header-label">Device</span>
+      <span class="sort-arrow"></span>
+    </th>
+    <th class="sortable" data-sort="Overall Score">
+      <span class="header-label">Overall Score</span>
+      <span class="sort-arrow"></span>
+    </th>
+    <th class="sortable" data-sort="Miles">
+      <span class="header-label">Miles</span>
+      <span class="sort-arrow"></span>
+    </th>
+    <th class="sortable" data-sort="Duration">
+      <span class="header-label">Duration</span>
+      <span class="sort-arrow"></span>
+    </th>
+    <th class="sortable" data-sort="Highway %">
+      <span class="header-label">Highway %</span>
+      <span class="sort-arrow"></span>
+    </th>
+    <th class="sortable" data-sort="City %">
+      <span class="header-label">City %</span>
+      <span class="sort-arrow"></span>
+    </th>
+    <th class="sortable" data-sort="Idle Time">
+      <span class="header-label">Idle Time</span>
+      <span class="sort-arrow"></span>
+    </th>
+    <th class="sortable" data-sort="Idling %">
+      <span class="header-label">Idling %</span>
+      <span class="sort-arrow"></span>
+    </th>
+    <th class="sortable" data-sort="Idling Score">
+      <span class="header-label">Idling Score</span>
+      <span class="sort-arrow"></span>
+    </th>
+    <th class="sortable" data-sort="Speeding Score">
+      <span class="header-label">Speeding Score</span>
+      <span class="sort-arrow"></span>
+    </th>
+    <th class="sortable" data-sort="Highway 1-8%">
+      <span class="header-label">Highway 1-8%</span>
+      <span class="sort-arrow"></span>
+    </th>
+    <th class="sortable" data-sort="Highway 9-13%">
+      <span class="header-label">Highway 9-13%</span>
+      <span class="sort-arrow"></span>
+    </th>
+    <th class="sortable" data-sort="Highway 14-19%">
+      <span class="header-label">Highway 14-19%</span>
+      <span class="sort-arrow"></span>
+    </th>
+    <th class="sortable" data-sort="Highway 20+%">
+      <span class="header-label">Highway 20+%</span>
+      <span class="sort-arrow"></span>
+    </th>
+    <th class="sortable" data-sort="Highway Score">
+      <span class="header-label">Highway Score</span>
+      <span class="sort-arrow"></span>
+    </th>
+    <th class="sortable" data-sort="City 1-5%">
+      <span class="header-label">City 1-5%</span>
+      <span class="sort-arrow"></span>
+    </th>
+    <th class="sortable" data-sort="City 6-9%">
+      <span class="header-label">City 6-9%</span>
+      <span class="sort-arrow"></span>
+    </th>
+</thead>
+
+              <tbody id="fleet-gps-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- SAFETY -->
+      <section id="safety-risk" class="tab-content">
+        <div class="panel">
+          <h3 class="panel-title">Safety & Risk Links</h3>
+          <div id="safety-links-container" class="info-card-grid"></div>
+        </div>
+      </section>
+
+      <!-- PEOPLE -->
+      <section id="people-hub" class="tab-content">
+        <div class="panel">
+          <h3 class="panel-title">Productivity Targets</h3>
+          <form id="settings-form" style="display:flex;gap:1rem;flex-wrap:wrap;">
+            <div class="input-group">
+              <label for="psp-tier-select">PSP Tier</label>
+              <select id="psp-tier-select">
+                <option>SP1</option><option>SP2</option><option>SP3</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label for="target-pools-input">Pool Count</label>
+              <input type="number" id="target-pools-input" />
+            </div>
+            <div class="input-group">
+              <label for="target-revenue-input">Revenue $</label>
+              <input type="number" id="target-revenue-input" />
+            </div>
+            <button type="submit" class="action-button">Set</button>
+          </form>
+        </div>
+        <div class="panel">
+          <h3 class="panel-title">New Hire Pacing</h3>
+          <div class="input-group">
+            <label for="trainee-select">Select Trainee</label>
+            <select id="trainee-select"></select>
+          </div>
+          <canvas id="pacing-chart"></canvas>
+        </div>
+        <div class="panel">
+          <h3 class="panel-title">Leadership Pipeline</h3>
+          <div style="overflow-x:auto">
+            <table id="pipeline-table">
+              <thead>
+                <tr>
+                  <th class="sortable" data-sort="name">Employee<span class="sort-arrow"></span></th>
+                  <th class="sortable" data-sort="tier">Tier<span class="sort-arrow"></span></th>
+                  <th class="sortable" data-sort="tenure">Tenure<span class="sort-arrow"></span></th>
+                  <th class="sortable" data-sort="pools">Pools<span class="sort-arrow"></span></th>
+                  <th class="sortable" data-sort="revenue">Revenue<span class="sort-arrow"></span></th>
+                  <th class="sortable" data-sort="quality">Quality<span class="sort-arrow"></span></th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="pipeline-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- GROWTH -->
+      <section id="growth-intel" class="tab-content">
+        <div class="panel">
+          <h3 class="panel-title">Zillow Growth Summary</h3>
+          <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;">
+            <input type="file" id="growth-csv-upload" accept=".csv" style="display:none"/>
+            <button
+              onclick="document.getElementById('growth-csv-upload').click();"
+              class="action-button"
+            >
+              Upload CSV
+            </button>
+            <span id="growth-upload-status" style="color:var(--text-secondary)"></span>
+          </div>
+          <div id="growth-kpi-grid" class="grid-container"></div>
+        </div>
+        <div class="panel">
+          <h3 class="panel-title">Opportunity Map</h3>
+          <div id="map"></div>
+        </div>
+        <div class="panel">
+          <h3 class="panel-title">Lead List</h3>
+          <div style="overflow-x:auto">
+            <table id="lead-list-table">
+              <thead>
+                <tr>
+                  <th>Rank</th><th>Address</th><th>Status</th><th>Home Value</th>
+                </tr>
+              </thead>
+              <tbody id="lead-list-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- QUALITY -->
+      <section id="quality" class="tab-content">
+        <div class="panel">
+          <h3 class="panel-title">Callback Tracker</h3>
+          <canvas id="callback-chart"></canvas>
+        </div>
+        <div class="panel">
+          <h3 class="panel-title">Safety Violations</h3>
+          <div id="safety-score-container" class="grid-container"></div>
+        </div>
+      </section>
+
+      <!-- P&L SIMULATOR -->
+      <section id="pnl-simulator" class="tab-content">
+        <div class="panel">
+          <h3 class="panel-title">Controls</h3>
+          <div class="grid-container">
+            <div class="input-group">
+              <label>Chemical % Increase <span id="chem-increase-value"></span></label>
+              <input type="range" id="chem-increase" min="0" max="50" value="5" />
+            </div>
+            <div class="input-group">
+              <label>Labor $/hr <span id="labor-rate-value"></span></label>
+              <input type="range" id="labor-rate" min="15" max="35" value="20" step="0.5" />
+            </div>
+            <div class="input-group">
+              <label>Services/Month <span id="service-frequency-value"></span></label>
+              <input type="range" id="service-frequency" min="3" max="5" value="4.33" step="0.01" />
+            </div>
+          </div>
+        </div>
+        <div class="grid-container">
+          <div class="kpi-card">
+            <div class="kpi-title">Cost/Pool</div>
+            <div id="cost-per-pool-value" class="kpi-value"></div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title">Gross Margin</div>
+            <div id="gross-margin-value" class="kpi-value"></div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title">Net Profit</div>
+            <div id="net-profit-value" class="kpi-value"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ADMIN CONTRACTS -->
+      <section id="admin-contracts" class="tab-content">
+        <div class="panel">
+          <h3 class="panel-title" style="color: var(--warning-color)">
+            Contracts Expiring
+          </h3>
+          <div style="overflow-x:auto">
+            <table id="expiring-contracts-table">
+              <thead>
+                <tr>
+                  <th>Customer</th><th>Branch</th><th>End Date</th><th>Value</th>
+                </tr>
+              </thead>
+              <tbody id="expiring-contracts-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel">
+          <h3 class="panel-title" style="color: var(--positive-color)">
+            Onboarding Contracts
+          </h3>
+          <div style="overflow-x:auto">
+            <table id="onboarding-contracts-table">
+              <thead>
+                <tr>
+                  <th>Customer</th><th>Branch</th><th>Start Date</th><th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="onboarding-contracts-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel">
+          <h3 class="panel-title" style="color: var(--negative-color)">
+            Contracts on Hold
+          </h3>
+          <div style="overflow-x:auto">
+            <table id="hold-contracts-table">
+              <thead>
+                <tr>
+                  <th>Customer</th><th>Branch</th><th>Hold Date</th><th>Reason</th>
+                </tr>
+              </thead>
+              <tbody id="hold-contracts-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- SOP LIBRARY -->
+      <section id="admin-sops" class="tab-content">
+        <div class="panel">
+          <h3 class="panel-title">SOP Library</h3>
+          <div style="overflow-x:auto">
+            <table id="sop-table">
+              <thead>
+                <tr>
+                  <th>Document</th><th>Owner</th><th>Status</th><th>Link</th>
+                </tr>
+              </thead>
+              <tbody id="sop-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- AR DASHBOARD -->
+      <section id="ar-dashboard" class="tab-content">
+        <div class="panel">
+          <h3 class="panel-title">AR Aging by Bucket</h3>
+          <canvas id="ar-aging-chart"></canvas>
+        </div>
+        <div class="panel">
+          <h3 class="panel-title">Critical Accounts 91+</h3>
+          <div style="overflow-x:auto">
+            <table id="critical-accounts-table">
+              <thead>
+                <tr>
+                  <th>Customer</th><th>Location</th><th>Amount</th><th>Assigned</th><th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="critical-accounts-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+        // ─── FLEET & SAFETY LINK ARRAYS ──────────────────────────────────────
+const safetyLinks = [
+  { Name: 'Injury Reporting Form',
+    URL: 'https://drive.google.com/file/d/1eAD5ckBFZrje2GJrOOnFv1LKMQr6x8uA/view?usp=sharing' },
+  { Name: 'Accident Investigation Report',
+    URL: 'https://drive.google.com/file/d/1NBevtEHH5Rn-2xNMettn3Z56E41sl8dF/view?usp=sharing' }
+];
+const fleetLinks = [
+  { Name: 'InTouch GPS', URL: 'https://americanpool.intouchgps.com/users/sign_in' },
+  { Name: 'Car IQ', URL: 'https://dashboard.cariqpay.com/member/home' },
+  { Name: 'Element Fleet (Xcelerate)',
+    URL: 'https://xcelerate.elementfleet.com/web/common/doLogin' },
+  { Name: 'EPass (Florida)',
+    URL: 'https://epass.cfxway.com/EpassWeb/Account/Login?ReturnUrl=%2FEpassWeb%2FManage' },
+  { Name: 'Distyll Graphic Solutions', URL: 'https://www.distyllgraphics.com/' }
+];
+const fleetDocuments = [
+  { Name: 'Vehicle Inspection (Printable)',
+    URL: 'https://docs.google.com/spreadsheets/d/12CqEkAqjDWwSRq9v6QITfV2B2CR998MTmDgFy_liMDE/edit?usp=sharing' },
+  { Name: 'Scanned Inspection Uploads',
+    URL: 'https://drive.google.com/drive/folders/1XLQJHtaDNtrTKDpQGf_hSm_W0t2HLd5_' },
+  { Name: 'Road Test Form',
+    URL: 'https://docs.google.com/document/d/1RmXp1bbxQEiencBOBgdcImvWiBAv39YS3qClTB2nzi4/edit?usp=sharing' },
+  { Name: 'Insurance Cards Folder',
+    URL: 'https://drive.google.com/drive/folders/1Vmr6_PU_rAghHeGXE8hrAwG5V4iTqeZx' },
+  { Name: 'Vehicle Chemical Schematic',
+    URL: 'https://docs.google.com/document/d/1OGdVAeEgQdBOTfi2NpW9CrrOEH-kV7ETP2L2UviYmhk/edit?usp=sharing' },
+  { Name: 'Mileage Log Template',
+    URL: 'https://docs.google.com/spreadsheets/d/1QhMZSzLT7fH2tcvQC2J-y6eyZHQ1gxZ3FN0CpmGE-JA/edit?usp=sharing' }
+];
+// global state
+let activePillar = "ops";
+const activeTabs = { ops: "executive-center", admin: "admin-contracts", ar: "ar-dashboard" };
+const chartInstances = {};
+const sortState = {};
+
+// ─── Default Fleet Table Sort ────────────────────────────────
+sortState['fleet-gps-table'] = { column: 'Overall Score', direction: 'desc' };
+console.log('🔽 Default sortState:', sortState['fleet-gps-table']);
+
+
+let productivityTargets = {
+  SP1: { poolCount: 65, revenue: 0 },
+  SP2: { poolCount: 65, revenue: 1000 },
+  SP3: { poolCount: 70, revenue: 1500 }
+};
+
+      // sample data (branchData, employees, fleetGpsData, etc.)...
+
+      const locationFilterEl = document.getElementById("location-filter");
+      const pillarBtns = document.querySelectorAll(".pillar-button");
+      const moduleNavs = document.querySelectorAll(".module-nav");
+      const tabContents = document.querySelectorAll(".tab-content");
+
+      // navigation
+      function switchPillar(pillar) {
+        activePillar = pillar;
+        pillarBtns.forEach(b => b.classList.toggle("active", b.dataset.pillar === pillar));
+        moduleNavs.forEach(nav =>
+          nav.id === `${pillar}-nav` ? nav.classList.add("active") : nav.classList.remove("active")
+        );
+        switchTab(activeTabs[pillar]);
+      }
+      function switchTab(targetId) {
+        document
+          .querySelectorAll(`#${activePillar}-nav .nav-button`)
+          .forEach(b => b.classList.toggle("active", b.dataset.target === targetId));
+        tabContents.forEach(c => c.id === targetId ? c.classList.add("active") : c.classList.remove("active"));
+        renderActiveModule();
+        if (targetId === "growth-intel" && chartInstances.map) {
+          setTimeout(() => chartInstances.map.resize(), 10);
+        }
+      }
+      pillarBtns.forEach(b => b.addEventListener("click", () => switchPillar(b.dataset.pillar)));
+      moduleNavs.forEach(nav =>
+        nav.addEventListener("click", e => {
+          const btn = e.target.closest(".nav-button");
+          if (btn) switchTab(btn.dataset.target);
+        })
+      );
+      locationFilterEl.addEventListener("change", initializeDashboard);
+// Hook up the Fleet CSV uploader
+document
+  .getElementById('fleet-csv-upload')
+  .addEventListener('change', e => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    // Show loading status
+    document.getElementById('upload-status').textContent = 'Loading…';
+    Papa.parse(file, {
+      header: true,
+      dynamicTyping: true,
+      skipEmptyLines: true,
+      complete: results => {
+        // Store parsed rows in a global override
+// after Papa.parse completes successfully:
+window.uploadedFleetData = results.data;
+// Persist this upload so it survives reloads
+localStorage.setItem('fleetData', JSON.stringify(results.data));
+        document.getElementById('upload-status').textContent =
+          `Loaded ${results.data.length} rows.`;
+        // Re-render the Fleet table with the new data
+        renderFleetManagement(
+          document.getElementById('location-filter').value
+        );
+      },
+      error: err => {
+        console.error('Failed to parse CSV', err);
+        document.getElementById('upload-status').textContent =
+          'Error loading file';
+      }
+    });
+  });
+
+      // initialize
+      function initializeDashboard() {
+        setupAllUploaders();
+        setupAllSortableTables();
+        renderAllModules(locationFilterEl.value);
+      }
+
+      function renderAllModules(selectedLocation) {
+        renderExecutiveCenter();
+        renderFleetManagement(selectedLocation);
+        renderSafetyRisk();
+        renderPeopleHub(selectedLocation);
+        renderGrowthIntel(selectedLocation);
+        renderQuality(selectedLocation);
+        renderPnlSimulator(selectedLocation);
+        renderContractsDashboard(selectedLocation);
+        renderSopLibrary();
+        renderArDashboard(selectedLocation);
+      }
+
+      function renderActiveModule() {
+        const selectedLocation = locationFilterEl.value;
+        const moduleId = activeTabs[activePillar];
+        const renderMap = {
+          "executive-center": () => renderExecutiveCenter(),
+          "fleet-management": () => renderFleetManagement(selectedLocation),
+          "safety-risk": renderSafetyRisk,
+          "people-hub": () => renderPeopleHub(selectedLocation),
+          "growth-intel": () => renderGrowthIntel(selectedLocation),
+          quality: () => renderQuality(selectedLocation),
+          "pnl-simulator": () => renderPnlSimulator(selectedLocation),
+          "admin-contracts": () => renderContractsDashboard(selectedLocation),
+          "admin-sops": renderSopLibrary,
+          "ar-dashboard": () => renderArDashboard(selectedLocation)
+        };
+        renderMap[moduleId]?.();
+      }
+
+      // --- RENDER FUNCTIONS HERE ---
+      function renderExecutiveCenter() {
+        document.getElementById("executive-kpi-grid").innerHTML =
+          '<div class="kpi-card"><div class="kpi-title">Placeholder</div><div class="kpi-value">100</div></div>';
+      }
+
+function renderFleetManagement(location) {
+  // ─── Quick Links & Docs ────────────────────────────────
+  document.getElementById('fleet-links-container').innerHTML = fleetLinks
+    .map(l => `<div class="info-card"><a href="${l.URL}" target="_blank">${l.Name}</a></div>`)
+    .join('');
+  document.getElementById('fleet-docs-container').innerHTML = fleetDocuments
+    .map(d => `<div class="info-card"><a href="${d.URL}" target="_blank">${d.Name}</a></div>`)
+    .join('');
+
+  // ─── Data & Filter ──────────────────────────────────────
+  const data = window.uploadedFleetData || fleetGpsData;
+  const rows = (location === 'ALL')
+    ? data.slice()  // copy array so sort won’t mutate original
+    : data.filter(r => r.Branch === location);
+
+  // ─── Dynamic Header (CSV) or Static 25-column Header ────
+  const table = document.getElementById('fleet-gps-table');
+  const thead = table.querySelector('thead');
+  if (window.uploadedFleetData) {
+ // after you do: window.uploadedFleetData = results.data;
+const cols = Object.keys(results.data[0] || {});
+const colSelect = document.getElementById('fleet-sort-column');
+colSelect.innerHTML = cols
+  .map(c => `<option value="${c}">${c}</option>`)
+  .join('');
+// set default sort to Overall Score
+colSelect.value = 'Overall Score';
+    '</tr>';
+  }
+  // else you already have your 25 <th>…</th> in your HTML
+
+  // ─── Apply Sorting ──────────────────────────────────────
+  const sortCfg = sortState['fleet-gps-table'];
+  if (sortCfg) {
+    rows.sort((a, b) => universalSort(a, b, sortCfg));
+  }
+
+  // ─── Color-Rule Definitions ─────────────────────────────
+  const rules = {
+    'Overall Score':    v => v >= 98,
+    'Miles':            v => v < 700,
+    'Speeding Score':   v => v >= 98,
+    'Highway 1-8%':     v => v < 24,
+    'Highway 9-13%':    v => v < 3,
+    'Highway 14-19%':   v => v === 0,
+    'Highway 20+%':     v => v === 0,
+    'Highway Score':    v => v >= 98,
+    'City 1-5%':        v => v < 30,
+    'City 6-9%':        v => v < 4,
+    'City 10-13%':      v => v < 1,
+    'City 14+%':        v => v === 0,
+    'City Score':       v => v >= 98,
+    'Acceleration':     v => v === 0,
+    'Braking':          v => v === 0,
+    'Aggression Score': v => v >= 98
+  };
+
+  // ─── Build Rows ─────────────────────────────────────────
+  const tbody = table.querySelector('tbody');
+  tbody.innerHTML = rows.map(r => {
+    // whole-row highlight if any violations
+    const rowWarn = (r.Violations || 0) > 0 ? 'warning' : '';
+    return `<tr class="${rowWarn}">` +
+      (window.uploadedFleetData
+        ? Object.keys(r).map(c => {
+            const raw = r[c];
+            const passFail = rules[c]
+              ? (rules[c](raw) ? 'pass' : 'fail')
+              : '';
+            const perfect = raw === 100 ? ' highlight' : '';
+            return `<td class="${passFail}${perfect}">${raw ?? ''}</td>`;
+          }).join('')
+        : [
+            r.Category, r.Device, r['Overall Score'], r.Miles, r.Duration,
+            r['Highway %'], r['City %'], r['Idle Time'], r['Idling %'],
+            r['Idling Score'], r['Speeding Score'], r['Highway 1-8%'],
+            r['Highway 9-13%'], r['Highway 14-19%'], r['Highway 20+%'],
+            r['Highway Score'], r['City 1-5%'], r['City 6-9%'],
+            r['City 10-13%'], r['City 14+%'], r['City Score'],
+            r.Acceleration, r.Braking, r['Aggression Score'], r['Date Range']
+          ].map(val => `<td>${val ?? ''}</td>`).join('')
+      ) +
+    `</tr>`;
+  }).join('');
+
+  // ─── Refresh Sort Arrows ────────────────────────────────
+  updateSortArrows('fleet-gps-table');
+}
+
+      function renderSafetyRisk() {
+        // populate safety-links-container
+      }
+
+      function renderPeopleHub(selectedLocation) {
+        // handle PSP targets form & pipeline table & pacing chart
+      }
+
+      function renderGrowthIntel(selectedLocation) {
+        // populate growth-kpi-grid, map markers, lead-list-body
+      }
+
+      function renderQuality(selectedLocation) {
+        // build callback-chart, populate safety-score-container
+      }
+
+      function renderPnlSimulator(selectedLocation) {
+        // P&L logic for sliders and KPI values
+      }
+
+      function renderContractsDashboard(selectedLocation) {
+        // populate expiring-contracts-body, onboarding-contracts-body, hold-contracts-body
+      }
+
+      function renderSopLibrary() {
+        // populate sop-table-body
+      }
+
+      function renderArDashboard(selectedLocation) {
+        // build ar-aging-chart and populate critical-accounts-body
+      }
+
+      // HELPERS
+      function universalSort(a, b, config) {
+        /* ... */
+      }
+
+      function setupAllSortableTables() {
+        /* ... */
+      }
+
+      function setupAllUploaders() {
+        /* ... */
+      }
+/**
+ * Clears all sort-arrow glyphs, then re-draws the one for the
+ * currently sorted column (+ up/down arrow).
+ */
+function updateSortArrows(tableId) {
+  // clear every arrow
+  document
+    .querySelectorAll(`#${tableId} th.sortable .sort-arrow`)
+    .forEach(arrow => arrow.textContent = '');
+
+  const cfg = sortState[tableId];
+  if (!cfg) return;
+
+  // find the TH for the sorted column and set its arrow
+  const arrowEl = document.querySelector(
+    `#${tableId} th[data-sort="${cfg.column}"] .sort-arrow`
+  );
+  if (arrowEl) {
+    arrowEl.textContent = cfg.direction === 'asc' ? '▲' : '▼';
+  }
+}
+
+      // Restore last fleet CSV upload if any
+const stored = localStorage.getItem('fleetData');
+if (stored) window.uploadedFleetData = JSON.parse(stored);
+
+// Explicit Asc/Desc sorting for Fleet table
+const colSelect = document.getElementById('fleet-sort-column');
+
+// log the default state on load:
+console.log('🔽 [Default] fleet-gps-table sortState:', sortState['fleet-gps-table']);
+
+document.getElementById('fleet-sort-asc').onclick = () => {
+  const col = colSelect.value;
+  console.log('🔼 [Asc click] column:', col);
+  sortState['fleet-gps-table'] = { column: col, direction: 'asc' };
+  renderFleetManagement(document.getElementById('location-filter').value);
+};
+
+document.getElementById('fleet-sort-desc').onclick = () => {
+  const col = colSelect.value;
+  console.log('🔽 [Desc click] column:', col);
+  sortState['fleet-gps-table'] = { column: col, direction: 'desc' };
+  renderFleetManagement(document.getElementById('location-filter').value);
+};
+
+// ─── Default Fleet-GPS sort on first load ────────────────────
+sortState['fleet-gps-table'] = { column: 'Overall Score', direction: 'desc' };
+// ─────────────────────────────────────────────────────────────
+// ─── Seed fleet-sort-column dropdown from static data ────────
+const initialCols = Object.keys(fleetGpsData[0] || {});
+  initialCols.map(c => `<option value="${c}">${c}</option>`).join('');
+
+// now that sortState is set, render everything:
+initializeDashboard();
+switchPillar("ops");
+    });
+  </script>
+</body>
+</html>
