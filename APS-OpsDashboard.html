@@ -887,13 +887,31 @@ function renderFleetManagement(location) {
   // ─── Dynamic Header (CSV) or Static 25-column Header ────
   const table = document.getElementById('fleet-gps-table');
   const thead = table.querySelector('thead');
-  if (window.uploadedFleetData) {
- // after you do: window.uploadedFleetData = results.data;
-const cols = Object.keys(results.data[0] || {});
-const colSelect = document.getElementById('fleet-sort-column');
-colSelect.innerHTML = cols
-  .map(c => `<option value="${c}">${c}</option>`)
-  .join('');
+if (window.uploadedFleetData) {
+  // 1) figure out your column names from the uploaded data
+  const cols = Object.keys(data[0] || {});
+
+  // 2) rebuild the “Sort by” dropdown
+  const colSelect = document.getElementById('fleet-sort-column');
+  colSelect.innerHTML = cols
+    .map(c => `<option value="${c}">${c}</option>`)
+    .join('');
+
+  // 3) rebuild the table header row
+  thead.innerHTML =
+    '<tr>' +
+    cols.map(c => `
+      <th class="sortable" data-sort="${c}">
+        <span class="header-label">${c}</span>
+        <span class="sort-arrow"></span>
+      </th>
+    `).join('') +
+    '</tr>';
+
+  // 4) re-attach the click handlers to these new headers
+  setupAllSortableTables();
+}
+
 // set default sort to Overall Score
 colSelect.value = 'Overall Score';
     '</tr>';
